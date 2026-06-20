@@ -28,6 +28,8 @@ public class ProjectGeneratorServiceImpl implements ProjectGeneratorService {
             // نسخ المشروع الأساسي
             copyBaseProject(zip, request);
 
+            addMainApplicationClass(zip, request);
+
             // توليد application.properties حسب قاعدة البيانات المختارة
             addFile(
                     zip,
@@ -38,6 +40,14 @@ public class ProjectGeneratorServiceImpl implements ProjectGeneratorService {
             // إضافة User Feature إذا مختارة
             if (request.isUserFeature()) {
                 addUserFeature(zip, request);
+            }
+
+            if(request.isSecurityFeature()) {
+                addSecurityFeature(zip, request);
+            }
+
+            if(request.isJwtFeature()) {
+                addJwtFeature(zip, request);
             }
 
             zip.close();
@@ -60,6 +70,11 @@ public class ProjectGeneratorServiceImpl implements ProjectGeneratorService {
                         // لا تنسخ application.properties من base-project
                         // لأننا رح نولده ديناميكياً حسب نوع قاعدة البيانات
                         if (relativePath.equals("src/main/resources/application.properties")) {
+                            return;
+                        }
+
+                        if (relativePath.contains("BaseProjectApplication.java")
+                                || relativePath.contains("BaseProjectApplicationTests.java")) {
                             return;
                         }
 
@@ -93,6 +108,31 @@ public class ProjectGeneratorServiceImpl implements ProjectGeneratorService {
         addFile(zip, basePath + "/controller/UserController.java", generateUserController(request));
     }
 
+    private void addMainApplicationClass(ZipOutputStream zip, ProjectRequest request) throws IOException {
+        String packagePath = request.getPackageName().replace(".", "/");
+
+        String content = """
+            package %s;
+
+            import org.springframework.boot.SpringApplication;
+            import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+            @SpringBootApplication
+            public class BaseProjectApplication {
+
+                public static void main(String[] args) {
+                    SpringApplication.run(BaseProjectApplication.class, args);
+                }
+            }
+            """.formatted(request.getPackageName());
+
+        addFile(
+                zip,
+                request.getProjectName() + "/src/main/java/" + packagePath + "/BaseProjectApplication.java",
+                content
+        );
+    }
+
 
     private String generateUserEntity(ProjectRequest request) {
         return """
@@ -121,14 +161,16 @@ public class ProjectGeneratorServiceImpl implements ProjectGeneratorService {
 
     private String generateUserRepository(ProjectRequest request) {
         return """
-            package %s.repository;
+                package %s.repository;
 
-            import %s.entity.User;
-            import org.springframework.data.jpa.repository.JpaRepository;
+                import %s.entity.User;
+                import java.util.Optional;
+                import org.springframework.data.jpa.repository.JpaRepository;
 
-            public interface UserRepository extends JpaRepository<User, Long> {
-            }
-            """.formatted(request.getPackageName(), request.getPackageName());
+                public interface UserRepository extends JpaRepository<User, Long> {
+                    Optional<User> findByEmail(String email);
+                }
+                """.formatted(request.getPackageName(), request.getPackageName());
     }
 
     private String generateUserDto(ProjectRequest request) {
@@ -347,10 +389,337 @@ public class ProjectGeneratorServiceImpl implements ProjectGeneratorService {
                 """);
         }
 
+        if (request.isSecurityFeature()) {
+            dependencies.append("""
+            
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-security</artifactId>
+            </dependency>
+            """);
+        }
+
+        if (request.isJwtFeature()) {
+            dependencies.append("""
+            
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>0.12.6</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>0.12.6</version>
+                <scope>runtime</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>0.12.6</version>
+                <scope>runtime</scope>
+            </dependency>
+            """);
+        }
+
         return dependencies.toString();
 
     }
 
+
+    private String generateJwtService(ProjectRequest request) {
+        return """
+            package %s.service;
+
+            import io.jsonwebtoken.Claims;
+            import io.jsonwebtoken.Jwts;
+            import io.jsonwebtoken.security.Keys;
+            import org.springframework.stereotype.Service;
+
+            import javax.crypto.SecretKey;
+            import java.nio.charset.StandardCharsets;
+            import java.util.Date;
+            import java.util.function.Function;
+
+            @Service
+            public class JwtService {
+
+                private static final String SECRET_KEY = "my-super-secret-key-my-super-secret-key-123456";
+
+                private SecretKey getSigningKey() {
+                    return Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
+                }
+
+                public String generateToken(String email) {
+                    return Jwts.builder()
+                            .subject(email)
+                            .issuedAt(new Date(System.currentTimeMillis()))
+                            .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24))
+                            .signWith(getSigningKey())
+                            .compact();
+                }
+
+                public String extractEmail(String token) {
+                    return extractClaim(token, Claims::getSubject);
+                }
+
+                public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+                    final Claims claims = Jwts.parser()
+                            .verifyWith(getSigningKey())
+                            .build()
+                            .parseSignedClaims(token)
+                            .getPayload();
+
+                    return claimsResolver.apply(claims);
+                }
+
+                public boolean isTokenValid(String token, String email) {
+                    final String tokenEmail = extractEmail(token);
+                    return tokenEmail.equals(email) && !isTokenExpired(token);
+                }
+
+                private boolean isTokenExpired(String token) {
+                    return extractClaim(token, Claims::getExpiration).before(new Date());
+                }
+            }
+            """.formatted(request.getPackageName());
+    }
+
+
+    private void addJwtFeature(ZipOutputStream zip, ProjectRequest request) throws IOException {
+        String packagePath = request.getPackageName().replace(".", "/");
+        String basePath = request.getProjectName() + "/src/main/java/" + packagePath;
+
+        addFile(zip, basePath + "/service/JwtService.java", generateJwtService(request));
+        addFile(zip, basePath + "/service/CustomUserDetailsService.java", generateCustomUserDetailsService(request));
+        addFile(zip, basePath + "/config/JwtAuthenticationFilter.java", generateJwtAuthenticationFilter(request));
+
+        addFile(zip, basePath + "/dto/LoginRequest.java", generateLoginRequest(request));
+        addFile(zip, basePath + "/dto/RegisterRequest.java", generateRegisterRequest(request));
+        addFile(zip, basePath + "/dto/AuthResponse.java", generateAuthResponse(request));
+        addFile(zip, basePath + "/controller/AuthController.java", generateAuthController(request));
+    }
+
+
+    private String generateCustomUserDetailsService(ProjectRequest request) {
+        return """
+            package %s.service;
+
+            import %s.entity.User;
+            import %s.repository.UserRepository;
+            import lombok.RequiredArgsConstructor;
+            import org.springframework.security.core.userdetails.UserDetails;
+            import org.springframework.security.core.userdetails.UserDetailsService;
+            import org.springframework.security.core.userdetails.UsernameNotFoundException;
+            import org.springframework.stereotype.Service;
+
+            import java.util.Collections;
+
+            @Service
+            @RequiredArgsConstructor
+            public class CustomUserDetailsService implements UserDetailsService {
+
+                private final UserRepository userRepository;
+
+                @Override
+                public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+                    User user = userRepository.findByEmail(email)
+                            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+                    return new org.springframework.security.core.userdetails.User(
+                            user.getEmail(),
+                            user.getPassword(),
+                            Collections.emptyList()
+                    );
+                }
+            }
+            """.formatted(
+                request.getPackageName(),
+                request.getPackageName(),
+                request.getPackageName()
+        );
+    }
+
+    private String generateJwtAuthenticationFilter(ProjectRequest request) {
+        return """
+            package %s.config;
+
+            import %s.service.JwtService;
+            import jakarta.servlet.FilterChain;
+            import jakarta.servlet.ServletException;
+            import jakarta.servlet.http.HttpServletRequest;
+            import jakarta.servlet.http.HttpServletResponse;
+            import lombok.RequiredArgsConstructor;
+            import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+            import org.springframework.security.core.context.SecurityContextHolder;
+            import org.springframework.security.core.userdetails.UserDetails;
+            import org.springframework.security.core.userdetails.UserDetailsService;
+            import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+            import org.springframework.stereotype.Component;
+            import org.springframework.web.filter.OncePerRequestFilter;
+
+            import java.io.IOException;
+
+            @Component
+            @RequiredArgsConstructor
+            public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+                private final JwtService jwtService;
+                private final UserDetailsService userDetailsService;
+
+                @Override
+                protected void doFilterInternal(
+                        HttpServletRequest request,
+                        HttpServletResponse response,
+                        FilterChain filterChain
+                ) throws ServletException, IOException {
+
+                    final String authHeader = request.getHeader("Authorization");
+
+                    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
+
+                    final String jwt = authHeader.substring(7);
+                    final String email = jwtService.extractEmail(jwt);
+
+                    if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+
+                        if (jwtService.isTokenValid(jwt, userDetails.getUsername())) {
+                            UsernamePasswordAuthenticationToken authToken =
+                                    new UsernamePasswordAuthenticationToken(
+                                            userDetails,
+                                            null,
+                                            userDetails.getAuthorities()
+                                    );
+
+                            authToken.setDetails(
+                                    new WebAuthenticationDetailsSource().buildDetails(request)
+                            );
+
+                            SecurityContextHolder.getContext().setAuthentication(authToken);
+                        }
+                    }
+
+                    filterChain.doFilter(request, response);
+                }
+            }
+            """.formatted(
+                request.getPackageName(),
+                request.getPackageName()
+        );
+    }
+
+
+    private String generateLoginRequest(ProjectRequest request) {
+        return """
+            package %s.dto;
+
+            import lombok.Data;
+
+            @Data
+            public class LoginRequest {
+                private String email;
+                private String password;
+            }
+            """.formatted(request.getPackageName());
+    }
+
+    private String generateRegisterRequest(ProjectRequest request) {
+        return """
+            package %s.dto;
+
+            import lombok.Data;
+
+            @Data
+            public class RegisterRequest {
+                private String name;
+                private String email;
+                private String password;
+            }
+            """.formatted(request.getPackageName());
+    }
+
+    private String generateAuthResponse(ProjectRequest request) {
+        return """
+            package %s.dto;
+
+            import lombok.AllArgsConstructor;
+            import lombok.Data;
+
+            @Data
+            @AllArgsConstructor
+            public class AuthResponse {
+                private String token;
+            }
+            """.formatted(request.getPackageName());
+    }
+
+
+    private String generateAuthController(ProjectRequest request) {
+        return """
+            package %s.controller;
+
+            import %s.dto.AuthResponse;
+            import %s.dto.LoginRequest;
+            import %s.dto.RegisterRequest;
+            import %s.entity.User;
+            import %s.repository.UserRepository;
+            import %s.service.JwtService;
+            import lombok.RequiredArgsConstructor;
+            import org.springframework.security.crypto.password.PasswordEncoder;
+            import org.springframework.web.bind.annotation.*;
+
+            @RestController
+            @RequestMapping("/api/auth")
+            @RequiredArgsConstructor
+            public class AuthController {
+
+                private final UserRepository userRepository;
+                private final PasswordEncoder passwordEncoder;
+                private final JwtService jwtService;
+
+                @PostMapping("/register")
+                public AuthResponse register(@RequestBody RegisterRequest request) {
+                    User user = User.builder()
+                            .name(request.getName())
+                            .email(request.getEmail())
+                            .password(passwordEncoder.encode(request.getPassword()))
+                            .build();
+
+                    userRepository.save(user);
+
+                    String token = jwtService.generateToken(user.getEmail());
+                    return new AuthResponse(token);
+                }
+
+                @PostMapping("/login")
+                public AuthResponse login(@RequestBody LoginRequest request) {
+                    User user = userRepository.findByEmail(request.getEmail())
+                            .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+
+                    if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+                        throw new RuntimeException("Invalid email or password");
+                    }
+
+                    String token = jwtService.generateToken(user.getEmail());
+                    return new AuthResponse(token);
+                }
+            }
+            """.formatted(
+                request.getPackageName(),
+                request.getPackageName(),
+                request.getPackageName(),
+                request.getPackageName(),
+                request.getPackageName(),
+                request.getPackageName(),
+                request.getPackageName()
+        );
+    }
 
 
 
@@ -359,6 +728,81 @@ public class ProjectGeneratorServiceImpl implements ProjectGeneratorService {
         zip.putNextEntry(entry);
         zip.write(content.getBytes());
         zip.closeEntry();
+    }
+
+
+    private void addSecurityFeature(ZipOutputStream zip, ProjectRequest request) throws IOException {
+        String packagePath = request.getPackageName().replace(".", "/");
+        String basePath = request.getProjectName() + "/src/main/java/" + packagePath;
+
+        addFile(zip, basePath + "/config/SecurityConfig.java", generateSecurityConfig(request));
+    }
+
+
+
+    private String generateSecurityConfig(ProjectRequest request) {
+        return """
+            package %s.config;
+
+            import lombok.RequiredArgsConstructor;
+            import org.springframework.context.annotation.Bean;
+            import org.springframework.context.annotation.Configuration;
+            import org.springframework.security.authentication.AuthenticationManager;
+            import org.springframework.security.authentication.AuthenticationProvider;
+            import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+            import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+            import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+            import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+            import org.springframework.security.config.http.SessionCreationPolicy;
+            import org.springframework.security.core.userdetails.UserDetailsService;
+            import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+            import org.springframework.security.crypto.password.PasswordEncoder;
+            import org.springframework.security.web.SecurityFilterChain;
+            import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+            @Configuration
+            @EnableWebSecurity
+            @RequiredArgsConstructor
+            public class SecurityConfig {
+
+                private final JwtAuthenticationFilter jwtAuthenticationFilter;
+                private final UserDetailsService userDetailsService;
+
+                @Bean
+                public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                    http
+                            .csrf(csrf -> csrf.disable())
+                            .authorizeHttpRequests(auth -> auth
+                                    .requestMatchers("/api/auth/**").permitAll()
+                                    .anyRequest().authenticated()
+                            )
+                            .sessionManagement(session -> session
+                                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                            )
+                            .authenticationProvider(authenticationProvider())
+                            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+                    return http.build();
+                }
+
+                @Bean
+                public AuthenticationProvider authenticationProvider() {
+                    DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+                    provider.setPasswordEncoder(passwordEncoder());
+                    return provider;
+                }
+
+                @Bean
+                public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+                    return config.getAuthenticationManager();
+                }
+
+                @Bean
+                public PasswordEncoder passwordEncoder() {
+                    return new BCryptPasswordEncoder();
+                }
+            }
+            """.formatted(request.getPackageName());
     }
 
 
