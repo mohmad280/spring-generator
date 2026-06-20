@@ -1,4 +1,4 @@
-<h1>Learning Management System (LMS)</h1>
+<h1>كيف حالك يا حلو ؟ هههههه</h1>
 <p>The LMS isafull-featured web platform that facilitates online learning. It allows
 Admins to manage users and system-wide content, Instructors to create and
 manage courses, and Students to enroll in courses, consume content, take quizzes,
@@ -33,25 +33,29 @@ Duplicate enrollments are not allowed.</p>
 ### files such as videos, PDFs, images, or audio. These media files are essential for
 ### creating rich lessons and enhancing the learning experience.
 # Tech Stack:
-<p>Frontend: React.js or Thymeleaf with Tailwind CSS
-Backend: Spring Boot 3, Spring Security, JWT, Spring Data JPA
-Database: MySQL/MongoDB
-Testing: JUnit 5, Mockito
-AWS $3/Uploadcare /Firebase Storage-for storing media like pdf, video, audio etc.
-OpenAPI/Swagger - for endpoints documentation
-Deployment: Render/Railway/Netlify
-</p>
-Testing:
-Write JUnit 5 and Mockito unit tests for backend services.(Controller, Service,
-Repository)
-Perform end-to-end testing for user workflows.
-How do I submit my work?
-For Code Submission:
-Code:
-Push your complete project code to GitHub
-<h1>• Organize your code into /backend and /frontend folders (if using React).</h1>
-Deployment:
-Option 1: Deploy Backend on Render/Railway/AWS EC2(Mandatory)
-Option 2: Frontend on Vercel/Netlify(Mandatory)
-Option 3: Record a 1-2 min walkthrough video and upload to Google Drive
-(public access)(Optional)
+
+
+
+<h2> generate</h2>
+<h2> copyBaseProject</h2>
+<h2> addUserFeature</h2>
+<h2> addMainApplicationClass</h2>
+<h2> generateUserEntity</h2>
+<h2> generateUserRepository</h2>
+<h2> generateUserDto</h2>
+<h2> generateUserService</h2>
+<h2> generateUserServiceImpl</h2>
+<h2> generateUserController</h2>
+<h2> getDependencies</h2>
+<h2> generateJwtService</h2>
+<h2> addJwtFeature</h2>
+<h2> generateCustomUserDetailsService</h2>
+<h2> generateJwtAuthenticationFilter</h2>
+<h2> generateLoginRequest</h2>
+<h2> generateRegisterRequest</h2>
+<h2> generateAuthResponse</h2>
+<h2> generateAuthController</h2>
+<h2> addFile</h2>
+<h2> addSecurityFeature</h2>
+<h2> generateSecurityConfig</h2>
+<h2> generateApplicationProperties</h2>
