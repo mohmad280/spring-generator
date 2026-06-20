@@ -1,0 +1,6 @@
+com\mas\spring_generator\controller\Home.class
+com\mas\spring_generator\service\ProjectGeneratorService.class
+com\mas\spring_generator\SpringGeneratorApplication.class
+com\mas\spring_generator\controller\ProjectGeneratorController.class
+com\mas\spring_generator\DTO\ProjectRequest.class
+com\mas\spring_generator\service\impl\ProjectGeneratorServiceImpl.class

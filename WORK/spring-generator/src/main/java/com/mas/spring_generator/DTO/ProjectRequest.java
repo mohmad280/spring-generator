@@ -1,0 +1,12 @@
+package com.mas.spring_generator.DTO;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
+@Data
+public class ProjectRequest {
+    @NotBlank(message = "project name is mandatory")
+    private String projectName;
+    @NotBlank(message = "package name is mandatory")
+    private String packageName;
+}
