@@ -9,8 +9,11 @@ public class ProjectRequest {
     private String projectName;
     @NotBlank(message = "package name is mandatory")
     private String packageName;
-
     private String databaseName;
     private DatabaseType database;
     private boolean userFeature;
+    private boolean securityFeature;
+    private boolean jwtFeature;
+
+
 }
