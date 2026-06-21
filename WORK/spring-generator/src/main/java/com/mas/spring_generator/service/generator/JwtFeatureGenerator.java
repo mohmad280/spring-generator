@@ -244,6 +244,15 @@ public class JwtFeatureGenerator {
     }
 
     public String generateAuthController(ProjectRequest request) {
+
+        String roleImport = request.isRoleFeature()
+                ? "import " + request.getPackageName() + ".enums.Role;\n"
+                : "";
+
+        String defaultRoleSetter = request.isRoleFeature()
+                ? "                        .role(Role." + request.getDefaultRole().toUpperCase() + ")\n"
+                : "";
+
         return """
             package %s.controller;
 
@@ -253,7 +262,7 @@ public class JwtFeatureGenerator {
             import %s.entity.User;
             import %s.repository.UserRepository;
             import %s.service.JwtService;
-            import lombok.RequiredArgsConstructor;
+            %simport lombok.RequiredArgsConstructor;
             import org.springframework.security.crypto.password.PasswordEncoder;
             import org.springframework.web.bind.annotation.*;
 
@@ -272,6 +281,7 @@ public class JwtFeatureGenerator {
                             .name(request.getName())
                             .email(request.getEmail())
                             .password(passwordEncoder.encode(request.getPassword()))
+    %s
                             .build();
 
                     userRepository.save(user);
@@ -300,7 +310,9 @@ public class JwtFeatureGenerator {
                 request.getPackageName(),
                 request.getPackageName(),
                 request.getPackageName(),
-                request.getPackageName()
+                request.getPackageName(),
+                roleImport,
+                defaultRoleSetter
         );
     }
 
