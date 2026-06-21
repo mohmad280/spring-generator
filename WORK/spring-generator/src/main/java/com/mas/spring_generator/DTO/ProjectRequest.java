@@ -3,6 +3,9 @@ package com.mas.spring_generator.DTO;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+
+import java.util.Set;
+
 @Data
 public class ProjectRequest {
     @NotBlank(message = "project name is mandatory")
@@ -14,6 +17,7 @@ public class ProjectRequest {
     private boolean userFeature;
     private boolean securityFeature;
     private boolean jwtFeature;
-
-
+    private boolean roleFeature;
+    private Set<String> roles;
+    private String defaultRole;
 }

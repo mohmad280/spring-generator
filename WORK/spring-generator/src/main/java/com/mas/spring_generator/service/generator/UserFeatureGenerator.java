@@ -26,12 +26,26 @@ public class UserFeatureGenerator {
     }
 
     public String generateUserEntity(ProjectRequest request) {
+        String roleField = "";
+
+        if (request.isRoleFeature()) {
+            roleField = """
+                
+                @Enumerated(EnumType.STRING)
+                private Role role;
+                """;
+        }
+
+        String roleImport = request.isRoleFeature()
+                ? "import " + request.getPackageName() + ".enums.Role;\n"
+                : "";
+
         return """
             package %s.entity;
 
             import jakarta.persistence.*;
             import lombok.*;
-
+            %s
             @Entity
             @Data
             @NoArgsConstructor
@@ -46,8 +60,9 @@ public class UserFeatureGenerator {
                 private String name;
                 private String email;
                 private String password;
+                %s
             }
-            """.formatted(request.getPackageName());
+            """.formatted(request.getPackageName(), roleImport, roleField);
     }
 
     public String generateUserRepository(ProjectRequest request) {
@@ -65,11 +80,19 @@ public class UserFeatureGenerator {
     }
 
     public String generateUserDto(ProjectRequest request) {
+        String roleImport = request.isRoleFeature()
+                ? "import " + request.getPackageName() + ".enums.Role;\n"
+                : "";
+
+        String roleField = request.isRoleFeature()
+                ? "    private Role role;\n"
+                : "";
+
         return """
             package %s.dto;
 
             import lombok.*;
-
+            %s
             @Data
             @NoArgsConstructor
             @AllArgsConstructor
@@ -78,8 +101,9 @@ public class UserFeatureGenerator {
                 private Long id;
                 private String name;
                 private String email;
+            %s
             }
-            """.formatted(request.getPackageName());
+            """.formatted(request.getPackageName(), roleImport, roleField);
     }
 
     public String generateUserService(ProjectRequest request) {
@@ -101,6 +125,19 @@ public class UserFeatureGenerator {
 
 
     public String generateUserServiceImpl(ProjectRequest request) {
+
+        String createRoleSetter = request.isRoleFeature()
+                ? "                        .role(userDto.getRole())\n"
+                : "";
+
+        String updateRoleSetter = request.isRoleFeature()
+                ? "        user.setRole(userDto.getRole());\n"
+                : "";
+
+        String dtoRoleSetter = request.isRoleFeature()
+                ? "                            .role(user.getRole())\n"
+                : "";
+
         return """
             package %s.service.impl;
 
@@ -124,6 +161,7 @@ public class UserFeatureGenerator {
                     User user = User.builder()
                             .name(userDto.getName())
                             .email(userDto.getEmail())
+           %s
                             .build();
 
                     User savedUser = userRepository.save(user);
@@ -152,16 +190,14 @@ public class UserFeatureGenerator {
 
                     user.setName(userDto.getName());
                     user.setEmail(userDto.getEmail());
-
+           %s
                     User updatedUser = userRepository.save(user);
                     return mapToDto(updatedUser);
                 }
 
                 @Override
                 public void deleteUser(Long id) {
-                    User user = userRepository.findById(id)
-                            .orElseThrow(() -> new RuntimeException("User not found"));
-                    userRepository.delete(user);
+                    userRepository.deleteById(id);
                 }
 
                 private UserDto mapToDto(User user) {
@@ -169,6 +205,7 @@ public class UserFeatureGenerator {
                             .id(user.getId())
                             .name(user.getName())
                             .email(user.getEmail())
+            %s
                             .build();
                 }
             }
@@ -177,7 +214,10 @@ public class UserFeatureGenerator {
                 request.getPackageName(),
                 request.getPackageName(),
                 request.getPackageName(),
-                request.getPackageName()
+                request.getPackageName(),
+                createRoleSetter,
+                updateRoleSetter,
+                dtoRoleSetter
         );
     }
 

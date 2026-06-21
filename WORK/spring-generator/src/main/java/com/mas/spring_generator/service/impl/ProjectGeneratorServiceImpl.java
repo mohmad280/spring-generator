@@ -8,14 +8,10 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import java.nio.file.*;
 
-import static com.mas.spring_generator.DTO.DatabaseType.MYSQL;
-import static com.mas.spring_generator.DTO.DatabaseType.POSTGRES;
+
 
 @Service
 @RequiredArgsConstructor
@@ -28,8 +24,11 @@ public class ProjectGeneratorServiceImpl implements ProjectGeneratorService {
     private final SecurityFeatureGenerator securityFeatureGenerator;
     private final JwtFeatureGenerator jwtFeatureGenerator;
     private final PropertiesGenerator propertiesGenerator;
+    private final RoleFeatureGenerator roleFeatureGenerator;
+
     @Override
     public byte[] generate(ProjectRequest request) {
+        validateRequest(request);
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             ZipOutputStream zip = new ZipOutputStream(outputStream);
@@ -51,11 +50,17 @@ public class ProjectGeneratorServiceImpl implements ProjectGeneratorService {
                 userFeatureGenerator.addUserFeature(zip, request);
             }
 
+            // add role
+            if (request.isRoleFeature()) {
+                roleFeatureGenerator.addRoleFeature(zip,request);
+            }
+
+            // add security base
             if(request.isSecurityFeature()) {
                 securityFeatureGenerator.addSecurityFeature(zip, request);
             }
-
-            if(request.isJwtFeature()) {
+            // add jwt
+            if(request.isJwtFeature() && request.isSecurityFeature()) {
                 jwtFeatureGenerator.addJwtFeature(zip, request);
             }
 
@@ -67,6 +72,45 @@ public class ProjectGeneratorServiceImpl implements ProjectGeneratorService {
         }
     }
 
+
+    private void validateRequest(ProjectRequest request) {
+        // Validation User
+        if (request.isRoleFeature() && !request.isUserFeature()) {
+            throw new IllegalArgumentException("Role feature requires User feature");
+        }
+
+        // Validation Security
+        if (request.isJwtFeature() && !request.isSecurityFeature()) {
+            throw new IllegalArgumentException("JWT feature requires Security feature");
+        }
+
+        // Validation JWT
+        if (request.isJwtFeature() && !request.isUserFeature()) {
+            throw new IllegalArgumentException("JWT feature requires User feature");
+        }
+
+        // Validation role
+        if (request.isRoleFeature()) {
+            if (request.getRoles() == null || request.getRoles().isEmpty()) {
+                throw new IllegalArgumentException("Roles list is required when Role feature is enabled");
+            }
+
+            if (request.getDefaultRole() == null || request.getDefaultRole().isBlank()) {
+                throw new IllegalArgumentException("Default role is required when Role feature is enabled");
+            }
+
+            boolean exists = request.getRoles()
+                    .stream()
+                    .anyMatch(role -> role.equalsIgnoreCase(request.getDefaultRole()));
+
+            if (!exists) {
+                throw new IllegalArgumentException("Default role must exist in roles list");
+            }
+        }
+
+        // Validation -------
+
+    }
 
 
 
