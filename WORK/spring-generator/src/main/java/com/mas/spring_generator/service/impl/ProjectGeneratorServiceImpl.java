@@ -25,6 +25,7 @@ public class ProjectGeneratorServiceImpl implements ProjectGeneratorService {
     private final JwtFeatureGenerator jwtFeatureGenerator;
     private final PropertiesGenerator propertiesGenerator;
     private final RoleFeatureGenerator roleFeatureGenerator;
+    private final SwaggerFeatureGenerator swaggerFeatureGenerator;
 
     @Override
     public byte[] generate(ProjectRequest request) {
@@ -62,6 +63,10 @@ public class ProjectGeneratorServiceImpl implements ProjectGeneratorService {
             // add jwt
             if(request.isJwtFeature() && request.isSecurityFeature()) {
                 jwtFeatureGenerator.addJwtFeature(zip, request);
+            }
+
+            if (request.isSwaggerFeature()) {
+                swaggerFeatureGenerator.addSwaggerFeature(zip, request);
             }
 
             zip.close();

@@ -20,4 +20,5 @@ public class ProjectRequest {
     private boolean roleFeature;
     private Set<String> roles;
     private String defaultRole;
+    private boolean swaggerFeature;
 }
