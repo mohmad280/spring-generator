@@ -60,19 +60,20 @@ public class EntityGenerator {
         String fieldsCode = entity.getFields() == null ? "" :
                 entity.getFields()
                         .stream()
-                        .map(f -> "    private " + f.getType() + " " + f.getName() + ";")
-                        .collect(Collectors.joining("\n"));
+                        .map(this::generateFieldCode)
+                        .collect(Collectors.joining("\n\n"));
 
         String relationsCode = entity.getRelations() == null ? "" :
                 entity.getRelations()
                         .stream()
                         .map(this::generateRelationCode)
-                        .collect(Collectors.joining("\n"));
+                        .collect(Collectors.joining("\n\n"));
 
         return """
             package %s.entity;
 
             import jakarta.persistence.*;
+            import jakarta.validation.constraints.*;
             import lombok.*;
             import java.util.List;
 
@@ -88,7 +89,7 @@ public class EntityGenerator {
 
             %s
 
-                %s
+            %s
             }
             """.formatted(
                 request.getPackageName(),
@@ -128,4 +129,91 @@ public class EntityGenerator {
             default -> "// not implemented yet";
         };
     }
+
+
+
+
+    private String generateFieldCode(com.mas.spring_generator.DTO.FieldRequest field) {
+
+        String validationsCode = "";
+
+        if (field.getValidations() != null && !field.getValidations().isEmpty()) {
+            validationsCode = field.getValidations()
+                    .stream()
+                    .map(this::generateValidationAnnotation)
+                    .collect(Collectors.joining("\n"));
+        }
+
+        if (!validationsCode.isBlank()) {
+            return """
+                    %s
+                    private %s %s;
+                """.formatted(
+                    validationsCode,
+                    field.getType(),
+                    field.getName()
+            );
+        }
+
+        return "    private " + field.getType() + " " + field.getName() + ";";
+    }
+
+
+
+
+
+    private String generateValidationAnnotation(com.mas.spring_generator.DTO.ValidationRequest validation) {
+
+        String messagePart = validation.getMessage() != null && !validation.getMessage().isBlank()
+                ? "(message = \"" + validation.getMessage() + "\")"
+                : "";
+
+        return switch (validation.getType()) {
+            case NOT_NULL -> "    @NotNull" + messagePart;
+            case NOT_BLANK -> "    @NotBlank" + messagePart;
+            case EMAIL -> "    @Email" + messagePart;
+
+            case MIN -> {
+                String message = validation.getMessage() != null && !validation.getMessage().isBlank()
+                        ? ", message = \"" + validation.getMessage() + "\""
+                        : "";
+
+                yield "    @Min(value = " + validation.getMin() + message + ")";
+            }
+
+            case MAX -> {
+                String message = validation.getMessage() != null && !validation.getMessage().isBlank()
+                        ? ", message = \"" + validation.getMessage() + "\""
+                        : "";
+
+                yield "    @Max(value = " + validation.getMax() + message + ")";
+            }
+
+            case SIZE -> {
+                String min = validation.getMin() != null ? "min = " + validation.getMin() : "";
+                String max = validation.getMax() != null ? "max = " + validation.getMax() : "";
+
+                String comma = !min.isBlank() && !max.isBlank() ? ", " : "";
+                String message = validation.getMessage() != null && !validation.getMessage().isBlank()
+                        ? (!min.isBlank() || !max.isBlank() ? ", " : "") + "message = \"" + validation.getMessage() + "\""
+                        : "";
+
+                yield "    @Size(" + min + comma + max + message + ")";
+            }
+
+            case PATTERN -> {
+                String message = validation.getMessage() != null && !validation.getMessage().isBlank()
+                        ? ", message = \"" + validation.getMessage() + "\""
+                        : "";
+
+                yield "    @Pattern(regexp = \"" + validation.getRegexp() + "\"" + message + ")";
+            }
+        };
+    }
+
+
+
+
+
+
 }
