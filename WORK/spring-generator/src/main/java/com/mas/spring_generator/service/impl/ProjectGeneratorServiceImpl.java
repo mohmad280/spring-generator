@@ -17,6 +17,7 @@ import java.util.zip.ZipOutputStream;
 @RequiredArgsConstructor
 public class ProjectGeneratorServiceImpl implements ProjectGeneratorService {
 
+    private final EntityGenerator entityGenerator;
     private final BaseProjectGenerator baseProjectGenerator;
     private final ZipHelper zipHelper;
     private final MainClassGenerator mainClassGenerator;
@@ -31,13 +32,16 @@ public class ProjectGeneratorServiceImpl implements ProjectGeneratorService {
     public byte[] generate(ProjectRequest request) {
         validateRequest(request);
         try {
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            ZipOutputStream zip = new ZipOutputStream(outputStream);
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream(); // عبارة عن ملف ZIP داخل الذاكرة.
+            ZipOutputStream zip = new ZipOutputStream(outputStream); // لكتابة الملفات داخل الـ ZIP.
 
             // نسخ المشروع الأساسي
             baseProjectGenerator.copyBaseProject(zip, request);
 
             mainClassGenerator.addMainApplicationClass(zip, request);
+
+            // انشاء الانتتي
+            entityGenerator.addEntities(zip, request);
 
             // توليد application.properties حسب قاعدة البيانات المختارة
             zipHelper.addFile(

@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.stream.Collectors;
 import java.util.zip.ZipOutputStream;
 
 @Component
@@ -21,18 +22,18 @@ public class RoleFeatureGenerator {
     }
 
     private String generateRoleEnum(ProjectRequest request) {
-        String roles = request.getRoles()
-                .stream()
+        String roles = request.getRoles() == null || request.getRoles().isEmpty()
+                ? "    USER"
+                : request.getRoles().stream()
                 .map(role -> "    " + role.toUpperCase())
-                .reduce((a, b) -> a + ",\n" + b)
-                .orElse("    USER");
+                .collect(Collectors.joining(",\n"));
 
         return """
-                package %s.enums;
+        package %s.enums;
 
-                public enum Role {
+        public enum Role {
         %s
-                }
+        }
                 """.formatted(request.getPackageName(), roles);
     }
 
