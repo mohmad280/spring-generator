@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -21,4 +22,8 @@ public class ProjectRequest {
     private Set<String> roles;
     private String defaultRole;
     private boolean swaggerFeature;
+
+    // Relation
+
+    private List<EntityRequest> entities;
 }
