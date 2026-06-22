@@ -1,5 +1,7 @@
-<h3> عملت المستخدم بقدر يعمل انتتي قد ما بده و بالمتغيرات الي بده اياها و العلاقات نصهن تم ,ظل النص الثاني لبكرا و بسسسسسسسسسسس</h3>
-<h2>عملت البق تاع ال enum كمان</h2>
+<h3>
+ عملت ال validation انت بتحدد شو بدك تحط validation جوا ال entity
+</h3>
+
 
 
 <h1>Test code:</h1>
@@ -61,4 +63,120 @@
     }
   ]
 }
+</h4>
+
+
+<h1> Test code with validation </h1>
+
+<h4> 
+
+{
+  "projectName": "school-system",
+  "packageName": "com.example.school",
+  "database": "MYSQL",
+  "databaseName": "school_db",
+  "userFeature": true,
+  "securityFeature": false,
+  "jwtFeature": false,
+  "roleFeature": false,
+  "swaggerFeature": true,
+  "entities": [
+    {
+      "name": "Student",
+      "fields": [
+        {
+          "name": "firstName",
+          "type": "String",
+          "validations": [
+            {
+              "type": "NOT_BLANK",
+              "message": "First name is required"
+            },
+            {
+              "type": "SIZE",
+              "min": 2,
+              "max": 50,
+              "message": "First name must be between 2 and 50 characters"
+            }
+          ]
+        },
+        {
+          "name": "age",
+          "type": "Integer",
+          "validations": [
+            {
+              "type": "NOT_NULL",
+              "message": "Age is required"
+            },
+            {
+              "type": "MIN",
+              "min": 6,
+              "message": "Age must be at least 6"
+            },
+            {
+              "type": "MAX",
+              "max": 100,
+              "message": "Age must be less than 100"
+            }
+          ]
+        },
+        {
+          "name": "email",
+          "type": "String",
+          "validations": [
+            {
+              "type": "NOT_BLANK",
+              "message": "Email is required"
+            },
+            {
+              "type": "EMAIL",
+              "message": "Invalid email format"
+            }
+          ]
+        },
+        {
+          "name": "date",
+          "type": "LocalDateTime"
+        }
+      ],
+      "relations": [
+        {
+          "type": "MANY_TO_ONE",
+          "targetEntity": "ClassRoom",
+          "fieldName": "classRoom"
+        }
+      ]
+    },
+    {
+      "name": "ClassRoom",
+      "fields": [
+        {
+          "name": "name",
+          "type": "String",
+          "validations": [
+            {
+              "type": "NOT_BLANK",
+              "message": "Classroom name is required"
+            },
+            {
+              "type": "SIZE",
+              "min": 2,
+              "max": 30,
+              "message": "Classroom name must be between 2 and 30 characters"
+            }
+          ]
+        }
+      ],
+      "relations": [
+        {
+          "type": "ONE_TO_MANY",
+          "targetEntity": "Student",
+          "fieldName": "students",
+          "mappedBy": "classRoom"
+        }
+      ]
+    }
+  ]
+}
+
 </h4>
