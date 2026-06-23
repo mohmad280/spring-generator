@@ -66,7 +66,7 @@ public class EntityGenerator {
         String relationsCode = entity.getRelations() == null ? "" :
                 entity.getRelations()
                         .stream()
-                        .map(this::generateRelationCode)
+                        .map(r -> generateRelationCode(entity.getName(), r))
                         .collect(Collectors.joining("\n\n"));
 
         return """
@@ -100,12 +100,18 @@ public class EntityGenerator {
     }
 
 
-    private String generateRelationCode(RelationRequest r) {
+    private String generateRelationCode(
+            String entityName,
+            RelationRequest r
+    ) {
+
+        if (r.getTargetEntity() == null)
+            throw new IllegalArgumentException("Target entity is required");
 
         return switch (r.getType()) {
 
             case MANY_TO_ONE -> """
-            @ManyToOne
+                @ManyToOne
                 @JoinColumn(name = "%s_id")
                 private %s %s;
             """.formatted(
@@ -115,7 +121,7 @@ public class EntityGenerator {
             );
 
             case ONE_TO_MANY -> """
-            @OneToMany(mappedBy = "%s")
+                @OneToMany(mappedBy = "%s")
                 private List<%s> %s;
             """.formatted(
                     r.getMappedBy(),
@@ -123,8 +129,34 @@ public class EntityGenerator {
                     r.getFieldName()
             );
 
-            // todo many to many
-            // todo one to one
+            case ONE_TO_ONE -> """
+                @OneToOne
+                @JoinColumn(name = "%s_id")
+                private %s %s;
+            """.formatted(
+                    r.getFieldName(),
+                    r.getTargetEntity(),
+                    r.getFieldName()
+            );
+
+            case MANY_TO_MANY -> """
+                @ManyToMany
+                @JoinTable(
+                    name = "%s_%s",
+                    joinColumns = @JoinColumn(name = "%s_id"),
+                    inverseJoinColumns = @JoinColumn(name = "%s_id")
+                )
+                private List<%s> %s;
+            """.formatted(
+                    entityName.toLowerCase(),
+                    r.getTargetEntity().toLowerCase(),
+
+                    entityName.toLowerCase(),
+                    r.getTargetEntity().toLowerCase(),
+
+                    r.getTargetEntity(),
+                    r.getFieldName()
+            );
 
             default -> "// not implemented yet";
         };
