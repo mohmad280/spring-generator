@@ -10,6 +10,28 @@
  المشاكل : 
  في باااقز بالانتتي ب ال id بتكرر و في مشكله ب المتغير تاع العلاقات 
  بصلحهن بعدين
+
+
+ test JSON :
+ {
+  "projectName": "school-system",
+  "packageName": "com.example.school",
+  "databaseName": "school_db",
+  "database": "MYSQL",
+  "userFeature": true,
+  "securityFeature": true,
+  "jwtFeature": true,
+  "roleFeature": true,
+  "roles": ["ADMIN", "USER"],
+  "defaultRole": "USER",
+  "swaggerFeature": true
+}
+
+tset file:
+https://drive.google.com/file/d/1xyzhol7gGiV38l3ob4guY7IxhBsbIOOS/view?usp=sharing
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/1f83bc41-218a-472f-a7d0-fca0d4948d27" />
+
 </h3>
 
 
