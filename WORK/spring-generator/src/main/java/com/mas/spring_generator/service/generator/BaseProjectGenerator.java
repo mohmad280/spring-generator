@@ -1,6 +1,7 @@
 package com.mas.spring_generator.service.generator;
 
 import com.mas.spring_generator.DTO.ProjectRequest;
+import com.mas.spring_generator.DTO.ProjectRequestWithERD;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -44,6 +45,45 @@ public class BaseProjectGenerator {
                         content = content.replace("{{projectName}}", request.getProjectName());
                         content = content.replace("{{packageName}}", request.getPackageName());
                         content = content.replace("{{dependencies}}", dependencyGenerator.getDependencies(request));
+                        content = content.replace("com.example.demo", request.getPackageName());
+
+                        zipHelper.addFile(zip, targetPath, content);
+
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+    }
+
+
+    // مع وجود ال ERD
+    public void copyBaseProjectWithERD(ZipOutputStream zip, ProjectRequestWithERD request) throws IOException {
+        Path basePath = Paths.get("src/main/resources/base-project");
+
+        Files.walk(basePath)
+                .filter(Files::isRegularFile)
+                .forEach(path -> {
+                    try {
+                        String relativePath = basePath.relativize(path).toString().replace("\\", "/");
+
+                        // لا تنسخ application.properties من base-project
+                        // لأننا رح نولده ديناميكياً حسب نوع قاعدة البيانات
+                        if (relativePath.equals("src/main/resources/application.properties")) {
+                            return;
+                        }
+
+                        if (relativePath.contains("BaseProjectApplication.java")
+                                || relativePath.contains("BaseProjectApplicationTests.java")) {
+                            return;
+                        }
+
+                        String targetPath = request.getProjectName() + "/" + relativePath;
+
+                        String content = Files.readString(path);
+
+                        content = content.replace("{{projectName}}", request.getProjectName());
+                        content = content.replace("{{packageName}}", request.getPackageName());
+                        content = content.replace("{{dependencies}}", dependencyGenerator.getDependenciesWithERD(request));
                         content = content.replace("com.example.demo", request.getPackageName());
 
                         zipHelper.addFile(zip, targetPath, content);

@@ -1,6 +1,7 @@
 package com.mas.spring_generator.DTO;
 
 import jakarta.validation.constraints.NotBlank;
+import lombok.Builder;
 import lombok.Data;
 
 
@@ -8,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 
 @Data
+@Builder
 public class ProjectRequest {
     @NotBlank(message = "project name is mandatory")
     private String projectName;

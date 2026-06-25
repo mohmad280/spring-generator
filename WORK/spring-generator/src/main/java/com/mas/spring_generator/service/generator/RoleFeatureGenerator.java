@@ -1,6 +1,7 @@
 package com.mas.spring_generator.service.generator;
 
 import com.mas.spring_generator.DTO.ProjectRequest;
+import com.mas.spring_generator.DTO.ProjectRequestWithERD;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -29,11 +30,36 @@ public class RoleFeatureGenerator {
                 .collect(Collectors.joining(",\n"));
 
         return """
-        package %s.enums;
+                package %s.enums;
+                
+                public enum Role {
+                %s
+                }
+                """.formatted(request.getPackageName(), roles);
+    }
 
-        public enum Role {
-        %s
-        }
+
+    // مع ال ERD
+    public void addRoleFeatureWithERD(ZipOutputStream zip, ProjectRequestWithERD request) throws IOException {
+        String packagePath = request.getPackageName().replace(".", "/");
+        String basePath = request.getProjectName() + "/src/main/java/" + packagePath;
+
+        zipHelper.addFile(zip, basePath + "/enums/Role.java", generateRoleEnumWithERD(request));
+    }
+
+    private String generateRoleEnumWithERD(ProjectRequestWithERD request) {
+        String roles = request.getRoles() == null || request.getRoles().isEmpty()
+                ? "    USER"
+                : request.getRoles().stream()
+                .map(role -> "    " + role.toUpperCase())
+                .collect(Collectors.joining(",\n"));
+
+        return """
+                package %s.enums;
+                
+                public enum Role {
+                %s
+                }
                 """.formatted(request.getPackageName(), roles);
     }
 

@@ -13,4 +13,6 @@ public class RelationRequest {
 
     private String mappedBy; // مهم للعكس (OneToMany)
 
+    // من اي انتتي اجا
+    private String sourceEntity;
 }

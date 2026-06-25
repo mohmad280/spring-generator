@@ -1,8 +1,6 @@
 package com.mas.spring_generator.service.generator;
 
-import com.mas.spring_generator.DTO.EntityRequest;
-import com.mas.spring_generator.DTO.ProjectRequest;
-import com.mas.spring_generator.DTO.RelationRequest;
+import com.mas.spring_generator.DTO.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -165,7 +163,7 @@ public class EntityGenerator {
 
 
 
-    private String generateFieldCode(com.mas.spring_generator.DTO.FieldRequest field) {
+    private String generateFieldCode(FieldRequest field) {
 
         String validationsCode = "";
 
@@ -194,7 +192,7 @@ public class EntityGenerator {
 
 
 
-    private String generateValidationAnnotation(com.mas.spring_generator.DTO.ValidationRequest validation) {
+    private String generateValidationAnnotation(ValidationRequest validation) {
 
         String messagePart = validation.getMessage() != null && !validation.getMessage().isBlank()
                 ? "(message = \"" + validation.getMessage() + "\")"
@@ -240,6 +238,7 @@ public class EntityGenerator {
 
                 yield "    @Pattern(regexp = \"" + validation.getRegexp() + "\"" + message + ")";
             }
+            case UNIQUE -> null; //todo بدها تكميل
         };
     }
 

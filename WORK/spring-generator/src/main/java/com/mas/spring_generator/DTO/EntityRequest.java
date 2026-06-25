@@ -9,6 +9,6 @@ public class EntityRequest {
 
     private String name; // done
     private List<FieldRequest> fields; // done
-    private List<RelationRequest> relations; // 50% done
+    private List<RelationRequest> relations; //  done
 
 }
