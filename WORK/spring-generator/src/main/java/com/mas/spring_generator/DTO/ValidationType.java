@@ -7,5 +7,6 @@ public enum ValidationType {
     SIZE,
     MIN,
     MAX,
-    PATTERN
+    PATTERN,
+    UNIQUE
 }

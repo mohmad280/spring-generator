@@ -1,8 +1,6 @@
 package com.mas.spring_generator.service.generator;
 
-import com.mas.spring_generator.DTO.EntityRequest;
-import com.mas.spring_generator.DTO.ProjectRequest;
-import com.mas.spring_generator.DTO.RelationRequest;
+import com.mas.spring_generator.DTO.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -85,8 +83,6 @@ public class EntityGenerator {
 
                 @Id
                 @GeneratedValue(strategy = GenerationType.IDENTITY)
-                private Long id;
-
             %s
 
             %s
@@ -108,6 +104,12 @@ public class EntityGenerator {
         if (r.getTargetEntity() == null)
             throw new IllegalArgumentException("Target entity is required");
 
+        String joinColumn = r.getFieldName();
+
+        if (joinColumn.endsWith("Id")) {
+            joinColumn = joinColumn.substring(0, joinColumn.length() - 2);
+        }
+
         return switch (r.getType()) {
 
             case MANY_TO_ONE -> """
@@ -115,9 +117,9 @@ public class EntityGenerator {
                 @JoinColumn(name = "%s_id")
                 private %s %s;
             """.formatted(
-                    r.getFieldName(),
+                    joinColumn,
                     r.getTargetEntity(),
-                    r.getFieldName()
+                    joinColumn
             );
 
             case ONE_TO_MANY -> """
@@ -126,7 +128,7 @@ public class EntityGenerator {
             """.formatted(
                     r.getMappedBy(),
                     r.getTargetEntity(),
-                    r.getFieldName()
+                    joinColumn
             );
 
             case ONE_TO_ONE -> """
@@ -134,9 +136,9 @@ public class EntityGenerator {
                 @JoinColumn(name = "%s_id")
                 private %s %s;
             """.formatted(
-                    r.getFieldName(),
+                    joinColumn,
                     r.getTargetEntity(),
-                    r.getFieldName()
+                    joinColumn
             );
 
             case MANY_TO_MANY -> """
@@ -155,7 +157,7 @@ public class EntityGenerator {
                     r.getTargetEntity().toLowerCase(),
 
                     r.getTargetEntity(),
-                    r.getFieldName()
+                    joinColumn
             );
 
             default -> "// not implemented yet";
@@ -165,7 +167,7 @@ public class EntityGenerator {
 
 
 
-    private String generateFieldCode(com.mas.spring_generator.DTO.FieldRequest field) {
+    private String generateFieldCode(FieldRequest field) {
 
         String validationsCode = "";
 
@@ -194,7 +196,7 @@ public class EntityGenerator {
 
 
 
-    private String generateValidationAnnotation(com.mas.spring_generator.DTO.ValidationRequest validation) {
+    private String generateValidationAnnotation(ValidationRequest validation) {
 
         String messagePart = validation.getMessage() != null && !validation.getMessage().isBlank()
                 ? "(message = \"" + validation.getMessage() + "\")"
@@ -240,6 +242,7 @@ public class EntityGenerator {
 
                 yield "    @Pattern(regexp = \"" + validation.getRegexp() + "\"" + message + ")";
             }
+            case UNIQUE -> "    @Column(unique = true)";
         };
     }
 
