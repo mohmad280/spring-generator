@@ -83,8 +83,6 @@ public class EntityGenerator {
 
                 @Id
                 @GeneratedValue(strategy = GenerationType.IDENTITY)
-                private Long id;
-
             %s
 
             %s
@@ -106,6 +104,12 @@ public class EntityGenerator {
         if (r.getTargetEntity() == null)
             throw new IllegalArgumentException("Target entity is required");
 
+        String joinColumn = r.getFieldName();
+
+        if (joinColumn.endsWith("Id")) {
+            joinColumn = joinColumn.substring(0, joinColumn.length() - 2);
+        }
+
         return switch (r.getType()) {
 
             case MANY_TO_ONE -> """
@@ -113,9 +117,9 @@ public class EntityGenerator {
                 @JoinColumn(name = "%s_id")
                 private %s %s;
             """.formatted(
-                    r.getFieldName(),
+                    joinColumn,
                     r.getTargetEntity(),
-                    r.getFieldName()
+                    joinColumn
             );
 
             case ONE_TO_MANY -> """
@@ -124,7 +128,7 @@ public class EntityGenerator {
             """.formatted(
                     r.getMappedBy(),
                     r.getTargetEntity(),
-                    r.getFieldName()
+                    joinColumn
             );
 
             case ONE_TO_ONE -> """
@@ -132,9 +136,9 @@ public class EntityGenerator {
                 @JoinColumn(name = "%s_id")
                 private %s %s;
             """.formatted(
-                    r.getFieldName(),
+                    joinColumn,
                     r.getTargetEntity(),
-                    r.getFieldName()
+                    joinColumn
             );
 
             case MANY_TO_MANY -> """
@@ -153,7 +157,7 @@ public class EntityGenerator {
                     r.getTargetEntity().toLowerCase(),
 
                     r.getTargetEntity(),
-                    r.getFieldName()
+                    joinColumn
             );
 
             default -> "// not implemented yet";
@@ -238,7 +242,7 @@ public class EntityGenerator {
 
                 yield "    @Pattern(regexp = \"" + validation.getRegexp() + "\"" + message + ")";
             }
-            case UNIQUE -> null; //todo بدها تكميل
+            case UNIQUE -> "    @Column(unique = true)";
         };
     }
 

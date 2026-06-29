@@ -44,6 +44,8 @@ public class DbmlParser implements ErdParser {
         // بتفذ ال regex
         Matcher matcher = pattern.matcher(content);
 
+        // todo اذا السكيرتي موجود لا تعمل انتتي ال يوزر
+        // المشكله انه لما يكون عندي المستخدم باعث بده يعمل انتتي اليوزر و طالب سكيرتي بصير في ثنين انتتي User
         while (matcher.find()) {
 
             String tableName = matcher.group(1);
@@ -52,11 +54,14 @@ public class DbmlParser implements ErdParser {
             EntityRequest entity = new EntityRequest();
             entity.setName(capitalize(tableName));
 
+            // العلاقات اول اشي عشان ابعثها لل field parser
+            List<RelationRequest> relations = parseRelations(tableName, content);
+
             // يتم ارسال محتوى الجدول فقط
-            List<FieldRequest> fields = parseFields(body);
+            List<FieldRequest> fields = parseFields(body, relations);
             entity.setFields(fields);
 
-            List<RelationRequest> relations = parseRelations(tableName, content);
+
             entity.setRelations(relations);
 
             entities.add(entity);
@@ -65,7 +70,8 @@ public class DbmlParser implements ErdParser {
         return entities;
     }
 
-    private List<FieldRequest> parseFields(String body) {
+    private List<FieldRequest> parseFields(String body,
+                                           List<RelationRequest> relations) {
 
         List<FieldRequest> fields = new ArrayList<>();
 
@@ -74,6 +80,15 @@ public class DbmlParser implements ErdParser {
         while (matcher.find()) {
 
             String name = matcher.group(1);
+
+            boolean isRelationField = relations.stream()
+                    .anyMatch(r -> r.getFieldName()
+                            .equals(toCamel(name)));
+
+            if (isRelationField) {
+                continue;
+            }
+
             String type = matcher.group(2);
             String constraints = matcher.group(3);
 
@@ -183,6 +198,7 @@ public class DbmlParser implements ErdParser {
 
             RelationRequest relation = new RelationRequest();
 
+            // todo
             relation.setFieldName(toCamel(fromField));
             relation.setTargetEntity(capitalize(toTable));
             relation.setMappedBy(toField);
